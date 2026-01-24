@@ -44,7 +44,7 @@ export const InfiniteScroll = ({
             {isFetchingNextPage ? "Loading..." : "Load More"}
           </Button>
         ) : (
-          <p className="text-sm text-muted-foreground">No more pages</p>
+          <p className="text-sm text-muted-foreground">No more videos</p>
         )}
       </div>
     </div>

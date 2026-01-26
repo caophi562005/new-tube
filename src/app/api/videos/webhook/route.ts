@@ -11,6 +11,7 @@ import {
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextRequest } from "next/server";
+import { UTApi } from "uploadthing/server";
 
 const SIGNING_SECRET = process.env["MUX_WEBHOOK_SECRET"];
 
@@ -74,10 +75,23 @@ export async function POST(req: NextRequest) {
         return new Response("No playback_id found", { status: 400 });
       }
 
-      const thumbnailUrl = `https://image.mux.com/${playbackId}/thumbnail.png`;
-      const previewUrl = `https://image.mux.com/${playbackId}/animated.gif`;
-
+      const tempThumbnailUrl = `https://image.mux.com/${playbackId}/thumbnail.png`;
+      const tempPreviewUrl = `https://image.mux.com/${playbackId}/animated.gif`;
       const duration = data.duration ? Math.round(data.duration * 1000) : 0;
+
+      const utapi = new UTApi();
+      const [uploadedThumbnailUrl, uploadedPreviewUrl] =
+        await utapi.uploadFilesFromUrl([tempThumbnailUrl, tempPreviewUrl]);
+
+      if (!uploadedThumbnailUrl.data || !uploadedPreviewUrl.data) {
+        return new Response("Failed to upload thumbnail or preview", {
+          status: 500,
+        });
+      }
+
+      const { key: thumbnailKey, ufsUrl: thumbnailUrl } =
+        uploadedThumbnailUrl.data;
+      const { key: previewKey, ufsUrl: previewUrl } = uploadedPreviewUrl.data;
 
       await db
         .update(videos)
@@ -85,6 +99,8 @@ export async function POST(req: NextRequest) {
           muxStatus: data.status,
           muxPlaybackId: playbackId,
           muxAssetId: data.id,
+          thumbnailKey,
+          previewKey,
           thumbnailUrl,
           previewUrl,
           duration,

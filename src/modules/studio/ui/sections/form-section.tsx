@@ -50,6 +50,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
+import { ThumbnailGenerateModel } from "../components/thumbnail-generate.model";
 import { ThumbnailUploadModel } from "../components/thumbnail-upload.model";
 
 interface FormSectionProps {
@@ -67,7 +68,13 @@ export const FormSection = ({ videoId }: FormSectionProps) => {
 };
 
 const FormSectionSkeleton = () => {
-  return <p>Loading...</p>;
+  return (
+    <div>
+      <div className="flex items-center justify-center h-screen">
+        <Loader2Icon size={100} className="animate-spin" />
+      </div>
+    </div>
+  );
 };
 
 const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
@@ -79,6 +86,7 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
 
   const [isCopied, setIsCopied] = useState(false);
   const [thumbnailUploadModal, setThumbnailUploadModal] = useState(false);
+  const [thumbnailGenerateModal, setThumbnailGenerateModal] = useState(false);
 
   const update = trpc.videos.update.useMutation({
     onSuccess: () => {
@@ -108,17 +116,6 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
       utils.studio.getMany.invalidate();
       utils.studio.getOne.invalidate({ id: videoId });
       toast.success("Video thumbnail restored successfully");
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    },
-  });
-
-  const generateThumbnail = trpc.videos.generateThumbnail.useMutation({
-    onSuccess: () => {
-      toast.success("Background job started", {
-        description: "Please wait for the thumbnail to be generated",
-      });
     },
     onError: (error) => {
       toast.error(error.message);
@@ -172,6 +169,11 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
         videoId={videoId}
         open={thumbnailUploadModal}
         onOpenChange={setThumbnailUploadModal}
+      />
+      <ThumbnailGenerateModel
+        videoId={videoId}
+        open={thumbnailGenerateModal}
+        onOpenChange={setThumbnailGenerateModal}
       />
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -311,9 +313,8 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
                               Change
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() =>
-                                generateThumbnail.mutate({ id: video.id })
-                              }
+                              onClick={() => setThumbnailGenerateModal(true)}
+                              disabled={true}
                             >
                               <SparklesIcon className="size-4 mr-1" />
                               AI-generated

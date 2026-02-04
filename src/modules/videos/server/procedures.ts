@@ -1,5 +1,6 @@
 import { db } from "@/db";
 import {
+  subscriptions,
   users,
   videoReactions,
   videos,
@@ -14,7 +15,7 @@ import {
   protectedProcedure,
 } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
-import { and, eq, getTableColumns, inArray } from "drizzle-orm";
+import { and, eq, getTableColumns, inArray, isNotNull } from "drizzle-orm";
 import { UTApi } from "uploadthing/server";
 import z from "zod";
 
@@ -45,12 +46,27 @@ export const videosRouter = createTRPCRouter({
           .where(inArray(videoReactions.userId, userId ? [userId] : [])),
       );
 
+      const viewerSubscriptions = db.$with("viewer_subscriptions").as(
+        db
+          .select()
+          .from(subscriptions)
+          .where(inArray(subscriptions.viewerId, userId ? [userId] : [])),
+      );
+
       const [existingVideo] = await db
-        .with(viewerReactions)
+        .with(viewerReactions, viewerSubscriptions)
         .select({
           ...getTableColumns(videos),
           user: {
             ...getTableColumns(users),
+            subscriberCount: db.$count(
+              subscriptions,
+              eq(subscriptions.creatorId, users.id),
+            ),
+            // Kiểm tra xem người dùng có đang sub creator không
+            viewerSubscription: isNotNull(viewerSubscriptions.viewerId).mapWith(
+              Boolean,
+            ),
           },
           viewCount: db.$count(videoViews, eq(videoViews.videoId, videos.id)),
           likeCount: db.$count(
@@ -70,8 +86,15 @@ export const videosRouter = createTRPCRouter({
           viewerReaction: viewerReactions.type,
         })
         .from(videos)
+        // Vào table tìm record có videos.userId =  users.id => thông tin creator
         .innerJoin(users, eq(videos.userId, users.id))
+        // Vào table CTE tìm record có videos.id =  viewerReactions.videoId => thông tin viewerReactions
         .leftJoin(viewerReactions, eq(viewerReactions.videoId, videos.id))
+        // Vào table CTE tìm record có videos.userId =  viewerSubscriptions.creatorId => thông tin viewerSubscriptions
+        .leftJoin(
+          viewerSubscriptions,
+          eq(viewerSubscriptions.creatorId, videos.userId),
+        )
         .where(eq(videos.id, input.id));
 
       if (!existingVideo) {

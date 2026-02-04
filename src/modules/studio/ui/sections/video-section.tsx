@@ -120,7 +120,7 @@ const VideoSectionSuspense = () => {
                   className="cursor-pointer"
                   onClick={() => router.push(`/studio/videos/${video.id}`)}
                 >
-                  <TableCell className="pl-6">
+                  <TableCell className="pl-6 max-w-[500px]">
                     <div className="flex items-center gap-4">
                       <div className="relative aspect-video w-36 shrink-0">
                         <VideoThumbnail
@@ -130,11 +130,11 @@ const VideoSectionSuspense = () => {
                           duration={video.duration || 0}
                         />
                       </div>
-                      <div className="flex flex-col overflow-hidden gap-y-1">
+                      <div className="flex flex-col overflow-hidden gap-y-1 min-w-0">
                         <span className="text-sm line-clamp-1">
                           {video.title}
                         </span>
-                        <span className="text-xs text-muted-foreground line-clamp-1">
+                        <span className="text-xs text-muted-foreground truncate">
                           {video.description || "No description"}
                         </span>
                       </div>

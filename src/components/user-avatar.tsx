@@ -18,14 +18,14 @@ const avatarVariants = cva("", {
 });
 
 interface UserAvatarProps extends VariantProps<typeof avatarVariants> {
-  imagUrl: string;
+  imageUrl: string;
   name: string;
   className?: string;
   onClick?: () => void;
 }
 
 export const UserAvatar = ({
-  imagUrl,
+  imageUrl,
   name,
   size,
   className,
@@ -36,7 +36,7 @@ export const UserAvatar = ({
       className={cn(avatarVariants({ size, className }))}
       onClick={onClick}
     >
-      <AvatarImage src={imagUrl} alt={name} className="object-cover" />
+      <AvatarImage src={imageUrl} alt={name} className="object-cover" />
     </Avatar>
   );
 };
